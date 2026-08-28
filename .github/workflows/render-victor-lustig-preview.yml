@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "remotion-video/src/VictorLustig.tsx"
+      - "remotion-video/src/VictorLustigV2.tsx"
       - "remotion-video/src/Root.tsx"
       - ".github/workflows/render-victor-lustig-preview.yml"
   workflow_dispatch:
@@ -32,6 +33,20 @@ jobs:
         working-directory: remotion-video
         run: npm ci
 
+      - name: Generate subtle soundtrack
+        working-directory: remotion-video
+        run: |
+          mkdir -p public
+          ffmpeg -y \
+            -f lavfi -i "anoisesrc=color=brown:amplitude=0.015:duration=60:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=52:duration=60:sample_rate=48000" \
+            -filter_complex "[0:a]lowpass=f=700,volume=0.7[n];[1:a]volume=0.035[s];[n][s]amix=inputs=2:normalize=0,afade=t=in:st=0:d=2,afade=t=out:st=57:d=2[a]" \
+            -map "[a]" -c:a pcm_s16le public/victor-bed.wav
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=68:duration=0.75:sample_rate=48000" \
+            -af "volume=0.5,afade=t=out:st=0.05:d=0.70" \
+            -c:a pcm_s16le public/victor-hit.wav
+
       - name: Ensure Remotion browser
         working-directory: remotion-video
         run: npx remotion browser ensure
@@ -40,24 +55,24 @@ jobs:
         working-directory: remotion-video
         run: npx remotion compositions
 
-      - name: Render preview
+      - name: Render V2 preview
         working-directory: remotion-video
         run: |
-          npx remotion render VictorLustigV1 out/VICTOR_LUSTIG_PREVIEW_V1.mp4 \
+          npx remotion render VictorLustigV2 out/VICTOR_LUSTIG_PREVIEW_V2.mp4 \
             --codec=h264 \
             --scale=0.5 \
-            --crf=28 \
+            --crf=27 \
             --concurrency=2 \
             --overwrite
 
       - name: Verify output
         working-directory: remotion-video
-        run: test -s out/VICTOR_LUSTIG_PREVIEW_V1.mp4 && ls -lh out/VICTOR_LUSTIG_PREVIEW_V1.mp4
+        run: test -s out/VICTOR_LUSTIG_PREVIEW_V2.mp4 && ls -lh out/VICTOR_LUSTIG_PREVIEW_V2.mp4
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:
-          name: VICTOR_LUSTIG_PREVIEW_V1
-          path: remotion-video/out/VICTOR_LUSTIG_PREVIEW_V1.mp4
+          name: VICTOR_LUSTIG_PREVIEW_V2
+          path: remotion-video/out/VICTOR_LUSTIG_PREVIEW_V2.mp4
           if-no-files-found: error
           retention-days: 7
