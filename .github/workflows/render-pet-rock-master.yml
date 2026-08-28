@@ -1,0 +1,67 @@
+name: Render Pet Rock Master
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/render-pet-rock-master.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-master:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify composition
+        working-directory: remotion-video
+        run: npx remotion compositions
+
+      - name: Render master
+        working-directory: remotion-video
+        run: |
+          npx remotion render PetRockV1 out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4 \
+            --codec=h264 \
+            --crf=18 \
+            --audio-bitrate=192k \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Verify output
+        working-directory: remotion-video
+        run: |
+          ls -lh out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
+          ffprobe -v error \
+            -show_entries format=duration,size \
+            -show_entries stream=codec_name,width,height,r_frame_rate \
+            -of default=noprint_wrappers=1 \
+            out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
+
+      - name: Upload master artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HORS_CADRE_PET_ROCK_MASTER_V4
+          path: remotion-video/out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
+          if-no-files-found: error
+          retention-days: 7
