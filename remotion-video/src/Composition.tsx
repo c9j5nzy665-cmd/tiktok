@@ -2,7 +2,6 @@ import {
   AbsoluteFill,
   Audio,
   Composition,
-  Img,
   interpolate,
   Sequence,
   spring,
@@ -97,10 +96,11 @@ const Scene = ({scene}: {scene: (typeof scenes)[number]}) => {
           }}
         />
         <div style={{position: "absolute", width: 6, height: 650, background: RED, transform: `scaleY(${redScale})`}} />
-        <Img
-          src={staticFile("logo-hors-cadre.png")}
-          style={{width: 820, height: 820, objectFit: "contain", opacity: logoOpacity}}
-        />
+        <div style={{opacity: logoOpacity, textAlign: "center", fontFamily: "Arial,Helvetica,sans-serif"}}>
+          <div style={{fontSize: 126, fontWeight: 950, lineHeight: 0.82, letterSpacing: -5}}>HORS</div>
+          <div style={{fontSize: 126, fontWeight: 950, lineHeight: 0.82, letterSpacing: -5}}>CADRE</div>
+          <div style={{marginTop: 44, fontSize: 24, fontWeight: 800, letterSpacing: 9}}>PENSE AUTREMENT.</div>
+        </div>
       </AbsoluteFill>
     );
   }
@@ -181,7 +181,6 @@ export const PetRockVideo = () => (
   <AbsoluteFill style={{background: "#000", color: WHITE}}>
     <Background />
     <Audio src={staticFile("voiceover-pet-rock.mp3")} volume={1} />
-    <Audio src={staticFile("ambient-documentary.mp3")} volume={0.3} />
     {scenes.map((scene) => (
       <Sequence key={scene.from} from={scene.from} durationInFrames={scene.duration}>
         <Scene scene={scene} />
