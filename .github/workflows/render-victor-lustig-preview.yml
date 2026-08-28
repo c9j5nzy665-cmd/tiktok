@@ -7,6 +7,7 @@ on:
     paths:
       - "remotion-video/src/VictorLustig.tsx"
       - "remotion-video/src/VictorLustigV2.tsx"
+      - "remotion-video/src/VictorLustigV3.tsx"
       - "remotion-video/src/Root.tsx"
       - ".github/workflows/render-victor-lustig-preview.yml"
   workflow_dispatch:
@@ -60,10 +61,10 @@ jobs:
         working-directory: remotion-video
         run: npx remotion compositions
 
-      - name: Render V2 preview
+      - name: Render V3 preview
         working-directory: remotion-video
         run: |
-          npx remotion render VictorLustigV2 out/VICTOR_LUSTIG_PREVIEW_V2.mp4 \
+          npx remotion render VictorLustigV3 out/VICTOR_LUSTIG_PREVIEW_V3.mp4 \
             --codec=h264 \
             --scale=0.5 \
             --crf=27 \
@@ -72,12 +73,12 @@ jobs:
 
       - name: Verify output
         working-directory: remotion-video
-        run: test -s out/VICTOR_LUSTIG_PREVIEW_V2.mp4 && ls -lh out/VICTOR_LUSTIG_PREVIEW_V2.mp4
+        run: test -s out/VICTOR_LUSTIG_PREVIEW_V3.mp4 && ls -lh out/VICTOR_LUSTIG_PREVIEW_V3.mp4
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:
-          name: VICTOR_LUSTIG_PREVIEW_V2
-          path: remotion-video/out/VICTOR_LUSTIG_PREVIEW_V2.mp4
+          name: VICTOR_LUSTIG_PREVIEW_V3
+          path: remotion-video/out/VICTOR_LUSTIG_PREVIEW_V3.mp4
           if-no-files-found: error
           retention-days: 7
