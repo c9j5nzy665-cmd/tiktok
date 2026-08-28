@@ -1,0 +1,132 @@
+name: Render Milgram Master
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/render-milgram-master.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate Milgram soundtrack
+        working-directory: remotion-video
+        run: |
+          mkdir -p public
+          ffmpeg -y \
+            -f lavfi -i "anoisesrc=color=brown:amplitude=0.014:duration=58:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=48:duration=58:sample_rate=48000" \
+            -filter_complex "[0:a]lowpass=f=620,volume=0.70[n];[1:a]volume=0.032[s];[n][s]amix=inputs=2:normalize=0,afade=t=in:st=0:d=1.4,afade=t=out:st=55:d=2[a]" \
+            -map "[a]" -c:a pcm_s16le public/milgram-bed.wav
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=62:duration=0.70:sample_rate=48000" \
+            -af "volume=0.46,afade=t=out:st=0.04:d=0.64" \
+            -c:a pcm_s16le public/milgram-hit.wav
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Render full-resolution Milgram V2 visuals
+        working-directory: remotion-video
+        run: |
+          mkdir -p out
+          npx remotion render MilgramV2 out/MILGRAM_V2_FULL.mp4 \
+            --codec=h264 \
+            --crf=18 \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Download natural French narration
+        working-directory: remotion-video
+        run: |
+          curl -L \
+            "https://resource2.heygen.ai/text_to_speech/5d875a3e07b64bbb909ad6947106c6ea/e11f0b51e57541f4abebd5f5d76defb8/id=b8d34581-d012-4de8-b0b8-5d77baded906.wav" \
+            -o natural-voice.wav
+          test -s natural-voice.wav
+
+      - name: Align narration to scenes
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y -i natural-voice.wav -filter_complex "\
+          [0:a]atrim=start=0:end=2.30,asetpts=PTS-STARTPTS,apad=pad_dur=2,atrim=duration=3.5[s1];\
+          [0:a]atrim=start=2.339:end=9.719,asetpts=PTS-STARTPTS,apad=pad_dur=1,atrim=duration=7.5[s2];\
+          [0:a]atrim=start=10.099:end=13.840,asetpts=PTS-STARTPTS,apad=pad_dur=2,atrim=duration=5[s3];\
+          [0:a]atrim=start=14.259:end=19.499,asetpts=PTS-STARTPTS,apad=pad_dur=2,atrim=duration=6.6667[s4];\
+          [0:a]atrim=start=19.799:end=25.359,asetpts=PTS-STARTPTS,atempo=1.043,apad=pad_dur=1,atrim=duration=5.3333[s5];\
+          [0:a]atrim=start=25.819:end=30.579,asetpts=PTS-STARTPTS,atempo=1.058,apad=pad_dur=1,atrim=duration=4.5[s6];\
+          [0:a]atrim=start=30.879:end=38.419,asetpts=PTS-STARTPTS,atempo=1.077,apad=pad_dur=1,atrim=duration=7[s7];\
+          [0:a]atrim=start=38.739:end=45.639,asetpts=PTS-STARTPTS,apad=pad_dur=2,atrim=duration=8.5[s8];\
+          [0:a]atrim=start=45.919:end=52.619,asetpts=PTS-STARTPTS,apad=pad_dur=1,atrim=duration=7[s9];\
+          [0:a]atrim=start=52.699:end=55.079,asetpts=PTS-STARTPTS,apad=pad_dur=1,atrim=duration=3[s10];\
+          [s1][s2][s3][s4][s5][s6][s7][s8][s9][s10]concat=n=10:v=0:a=1,aresample=48000[voice]" \
+            -map "[voice]" -c:a pcm_s16le aligned-voice.wav
+
+      - name: Mix final audio
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y \
+            -i aligned-voice.wav -i public/milgram-bed.wav \
+            -i public/milgram-hit.wav -i public/milgram-hit.wav -i public/milgram-hit.wav -i public/milgram-hit.wav \
+            -i public/milgram-hit.wav -i public/milgram-hit.wav -i public/milgram-hit.wav -i public/milgram-hit.wav \
+            -filter_complex "\
+            [0:a]volume=1.0[v];\
+            [1:a]volume=0.075[b];\
+            [2:a]volume=0.14,adelay=0|0[h0];\
+            [3:a]volume=0.13,adelay=1600|1600[h1];\
+            [4:a]volume=0.11,adelay=16667|16667[h2];\
+            [5:a]volume=0.15,adelay=23500|23500[h3];\
+            [6:a]volume=0.20,adelay=28200|28200[h4];\
+            [7:a]volume=0.16,adelay=32500|32500[h5];\
+            [8:a]volume=0.11,adelay=35233|35233[h6];\
+            [9:a]volume=0.14,adelay=53000|53000[h7];\
+            [v][b][h0][h1][h2][h3][h4][h5][h6][h7]amix=inputs=10:normalize=0,atrim=duration=58,loudnorm=I=-16:TP=-1.5:LRA=7[mix]" \
+            -map "[mix]" -c:a aac -b:a 192k final-audio.m4a
+
+      - name: Build final TikTok master
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y \
+            -i out/MILGRAM_V2_FULL.mp4 \
+            -i final-audio.m4a \
+            -map 0:v:0 -map 1:a:0 \
+            -c:v copy -c:a copy \
+            -map_metadata -1 \
+            -movflags +faststart \
+            -t 58 \
+            out/HORS_CADRE_MILGRAM_MASTER_V3.mp4
+          ffprobe -v error -show_entries stream=width,height,r_frame_rate -show_entries format=duration,size -of default=nw=1 out/HORS_CADRE_MILGRAM_MASTER_V3.mp4
+
+      - name: Upload master artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HORS_CADRE_MILGRAM_MASTER_V3
+          path: remotion-video/out/HORS_CADRE_MILGRAM_MASTER_V3.mp4
+          if-no-files-found: error
+          retention-days: 7
