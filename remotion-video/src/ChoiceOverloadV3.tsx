@@ -345,14 +345,12 @@ export const ChoiceOverloadV3Video = () => (
   <AbsoluteFill style={{background: "#050505"}}>
     <ChoiceOverloadV2Video />
 
-    <Sequence from={20} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.13} /></Sequence>
-    <Sequence from={105} durationInFrames={20}><Audio src={staticFile("choice-overload-tick.wav")} volume={.18} /></Sequence>
-    <Sequence from={690} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.12} /></Sequence>
-    <Sequence from={865} durationInFrames={20}><Audio src={staticFile("choice-overload-tick.wav")} volume={.24} /></Sequence>
-    <Sequence from={990} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.10} /></Sequence>
-    <Sequence from={1230} durationInFrames={20}><Audio src={staticFile("choice-overload-tick.wav")} volume={.14} /></Sequence>
-    <Sequence from={1470} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.11} /></Sequence>
-    <Sequence from={1590} durationInFrames={20}><Audio src={staticFile("choice-overload-tick.wav")} volume={.16} /></Sequence>
+    {/* Keep only soft, broadband transitions. The synthetic 960 Hz ticks from the preview
+        were removed because they became harsh around the 3% vs 31% reveal (~28 s). */}
+    <Sequence from={20} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.10} /></Sequence>
+    <Sequence from={690} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.09} /></Sequence>
+    <Sequence from={990} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.08} /></Sequence>
+    <Sequence from={1470} durationInFrames={22}><Audio src={staticFile("choice-overload-whoosh.wav")} volume={.08} /></Sequence>
 
     <HookLock />
     <DecisionSplit />
