@@ -2,6 +2,13 @@ name: Render Pet Rock Preview
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "remotion-video/src/**"
+      - "remotion-video/public/**"
+      - ".github/workflows/render-pet-rock-preview.yml"
 
 permissions:
   contents: read
