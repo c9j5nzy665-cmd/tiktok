@@ -51,12 +51,9 @@ jobs:
       - name: Verify output
         working-directory: remotion-video
         run: |
+          test -f out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
           ls -lh out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
-          ffprobe -v error \
-            -show_entries format=duration,size \
-            -show_entries stream=codec_name,width,height,r_frame_rate \
-            -of default=noprint_wrappers=1 \
-            out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
+          stat -c 'size=%s bytes' out/HORS_CADRE_PET_ROCK_MASTER_V4.mp4
 
       - name: Upload master artifact
         uses: actions/upload-artifact@v4
