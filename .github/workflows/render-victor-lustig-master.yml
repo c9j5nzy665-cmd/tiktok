@@ -1,0 +1,90 @@
+name: Render Victor Lustig Master
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/render-victor-lustig-master.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate soundtrack assets
+        working-directory: remotion-video
+        run: |
+          mkdir -p public
+          ffmpeg -y \
+            -f lavfi -i "anoisesrc=color=brown:amplitude=0.015:duration=60:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=52:duration=60:sample_rate=48000" \
+            -filter_complex "[0:a]lowpass=f=700,volume=0.7[n];[1:a]volume=0.035[s];[n][s]amix=inputs=2:normalize=0,afade=t=in:st=0:d=2,afade=t=out:st=57:d=2[a]" \
+            -map "[a]" -c:a pcm_s16le public/victor-bed.wav
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=68:duration=0.75:sample_rate=48000" \
+            -af "volume=0.5,afade=t=out:st=0.05:d=0.70" \
+            -c:a pcm_s16le public/victor-hit.wav
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify composition
+        working-directory: remotion-video
+        run: npx remotion compositions
+
+      - name: Render 1080x1920 master
+        working-directory: remotion-video
+        run: |
+          mkdir -p out
+          npx remotion render VictorLustigV3 out/HORS_CADRE_VICTOR_LUSTIG_MASTER_V3_RAW.mp4 \
+            --codec=h264 \
+            --crf=18 \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Strip metadata and finalize
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y \
+            -i out/HORS_CADRE_VICTOR_LUSTIG_MASTER_V3_RAW.mp4 \
+            -map 0:v:0 -map 0:a:0? \
+            -c copy \
+            -map_metadata -1 \
+            -metadata title= \
+            -metadata comment= \
+            out/HORS_CADRE_VICTOR_LUSTIG_MASTER_V3.mp4
+          test -s out/HORS_CADRE_VICTOR_LUSTIG_MASTER_V3.mp4
+          ls -lh out/HORS_CADRE_VICTOR_LUSTIG_MASTER_V3.mp4
+
+      - name: Upload master artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HORS_CADRE_VICTOR_LUSTIG_MASTER_V3
+          path: remotion-video/out/HORS_CADRE_VICTOR_LUSTIG_MASTER_V3.mp4
+          if-no-files-found: error
+          retention-days: 7
