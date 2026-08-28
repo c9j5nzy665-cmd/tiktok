@@ -1,0 +1,63 @@
+name: Render Victor Lustig Preview
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "remotion-video/src/VictorLustig.tsx"
+      - "remotion-video/src/Root.tsx"
+      - ".github/workflows/render-victor-lustig-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify compositions
+        working-directory: remotion-video
+        run: npx remotion compositions
+
+      - name: Render preview
+        working-directory: remotion-video
+        run: |
+          npx remotion render VictorLustigV1 out/VICTOR_LUSTIG_PREVIEW_V1.mp4 \
+            --codec=h264 \
+            --scale=0.5 \
+            --crf=28 \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Verify output
+        working-directory: remotion-video
+        run: test -s out/VICTOR_LUSTIG_PREVIEW_V1.mp4 && ls -lh out/VICTOR_LUSTIG_PREVIEW_V1.mp4
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VICTOR_LUSTIG_PREVIEW_V1
+          path: remotion-video/out/VICTOR_LUSTIG_PREVIEW_V1.mp4
+          if-no-files-found: error
+          retention-days: 7
