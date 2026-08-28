@@ -1,0 +1,56 @@
+name: Render Pet Rock Preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify composition
+        working-directory: remotion-video
+        run: npx remotion compositions
+
+      - name: Render preview
+        working-directory: remotion-video
+        run: |
+          npx remotion render PetRockV1 out/PET_ROCK_IMAGES_PREVIEW.mp4 \
+            --codec=h264 \
+            --scale=0.5 \
+            --crf=28 \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Show rendered file
+        working-directory: remotion-video
+        run: ls -lh out/PET_ROCK_IMAGES_PREVIEW.mp4
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PET_ROCK_IMAGES_PREVIEW
+          path: remotion-video/out/PET_ROCK_IMAGES_PREVIEW.mp4
+          if-no-files-found: error
+          retention-days: 3
