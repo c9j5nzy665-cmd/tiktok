@@ -1,0 +1,82 @@
+name: Render Milgram Preview
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "remotion-video/src/MilgramV1.tsx"
+      - "remotion-video/src/Root.tsx"
+      - ".github/workflows/render-milgram-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate Milgram soundtrack
+        working-directory: remotion-video
+        run: |
+          mkdir -p public
+          ffmpeg -y \
+            -f lavfi -i "anoisesrc=color=brown:amplitude=0.014:duration=58:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=48:duration=58:sample_rate=48000" \
+            -filter_complex "[0:a]lowpass=f=620,volume=0.70[n];[1:a]volume=0.032[s];[n][s]amix=inputs=2:normalize=0,afade=t=in:st=0:d=1.5,afade=t=out:st=55:d=2[a]" \
+            -map "[a]" -c:a pcm_s16le public/milgram-bed.wav
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=62:duration=0.75:sample_rate=48000" \
+            -af "volume=0.48,afade=t=out:st=0.04:d=0.70" \
+            -c:a pcm_s16le public/milgram-hit.wav
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify compositions
+        working-directory: remotion-video
+        run: npx remotion compositions
+
+      - name: Render V1 preview
+        working-directory: remotion-video
+        run: |
+          npx remotion render MilgramV1 out/MILGRAM_PREVIEW_V1.mp4 \
+            --codec=h264 \
+            --scale=0.5 \
+            --crf=27 \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Verify output
+        working-directory: remotion-video
+        run: test -s out/MILGRAM_PREVIEW_V1.mp4 && ls -lh out/MILGRAM_PREVIEW_V1.mp4
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MILGRAM_PREVIEW_V1
+          path: remotion-video/out/MILGRAM_PREVIEW_V1.mp4
+          if-no-files-found: error
+          retention-days: 7
