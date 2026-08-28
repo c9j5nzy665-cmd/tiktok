@@ -1,0 +1,135 @@
+name: Render Choice Overload Clean Master
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/render-choice-overload-clean-master.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Install audio tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          pip install edge-tts
+
+      - name: Create silent placeholders for visual render
+        working-directory: remotion-video
+        run: |
+          mkdir -p public out
+          ffmpeg -y -f lavfi -i anullsrc=r=48000:cl=stereo -t 60 -c:a libmp3lame -b:a 64k public/choice-overload-voice.mp3
+          ffmpeg -y -f lavfi -i anullsrc=r=48000:cl=stereo -t 60 -c:a pcm_s16le public/choice-overload-bed.wav
+          ffmpeg -y -f lavfi -i anullsrc=r=48000:cl=stereo -t 1 -c:a pcm_s16le public/choice-overload-hit.wav
+          ffmpeg -y -f lavfi -i anullsrc=r=48000:cl=stereo -t 1 -c:a pcm_s16le public/choice-overload-whoosh.wav
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Render full-resolution visuals
+        working-directory: remotion-video
+        run: |
+          npx remotion render ChoiceOverloadV3 out/choice-overload-visuals-with-silence.mp4 \
+            --codec=h264 \
+            --crf=18 \
+            --concurrency=2 \
+            --overwrite
+          ffmpeg -y -i out/choice-overload-visuals-with-silence.mp4 -map 0:v:0 -c:v copy -an out/choice-overload-visuals.mp4
+
+      - name: Generate clean French narration only
+        working-directory: remotion-video
+        run: |
+          python - <<'PY'
+          import asyncio
+          import edge_tts
+
+          text = """Dans un supermarché californien, deux chercheurs installent une table de confitures.
+
+          Un jour : vingt-quatre parfums. Un autre : seulement six.
+
+          Avec vingt-quatre choix, environ soixante pour cent des passants s'arrêtent. Avec six, seulement quarante pour cent.
+
+          Plus de choix attire davantage.
+
+          Mais au moment d'acheter, tout s'inverse. Avec vingt-quatre confitures, à peine trois pour cent achètent. Avec six, près d'un tiers passe à la caisse.
+
+          Le grand choix avait attiré plus de monde, mais rendu la décision plus difficile.
+
+          Cette expérience a popularisé le choice overload. Dans certaines situations, trop d'options peut pousser à reporter, renoncer ou douter.
+
+          Et aujourd'hui, le mécanisme est partout : menus interminables, streaming, applications de rencontre, dizaines de produits presque identiques.
+
+          Le problème n'est pas d'avoir du choix. C'est d'en avoir assez pour ne plus savoir quoi laisser de côté.
+
+          Parfois, moins de choix ne te limite pas. Il t'aide à décider.
+
+          HORS CADRE. Pense autrement."""
+
+          async def main():
+              communicate = edge_tts.Communicate(text, "fr-FR-HenriNeural", rate="-2%", pitch="-2Hz")
+              await communicate.save("out/voice-raw.mp3")
+
+          asyncio.run(main())
+          PY
+
+          RAW_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 out/voice-raw.mp3)
+          FACTOR=$(python - <<PY
+          d=float("$RAW_DUR")
+          print(max(0.80, min(1.25, d/57.4)))
+          PY
+          )
+          echo "Narration duration: $RAW_DUR | atempo=$FACTOR"
+          ffmpeg -y -i out/voice-raw.mp3 \
+            -af "atempo=${FACTOR},aresample=48000,highpass=f=75,lowpass=f=11000,acompressor=threshold=-20dB:ratio=2:attack=10:release=120,loudnorm=I=-16:TP=-1.5:LRA=7" \
+            -t 58 -c:a aac -b:a 192k out/clean-voice.m4a
+
+      - name: Build clean final master
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y \
+            -i out/choice-overload-visuals.mp4 \
+            -i out/clean-voice.m4a \
+            -map 0:v:0 -map 1:a:0 \
+            -c:v copy -c:a copy \
+            -t 60 \
+            -map_metadata -1 \
+            -movflags +faststart \
+            out/HORS_CADRE_CHOICE_OVERLOAD_MASTER_V3_CLEAN.mp4
+
+          ffprobe -v error \
+            -show_entries stream=codec_name,width,height,r_frame_rate \
+            -show_entries format=duration,size \
+            -of default=nw=1 \
+            out/HORS_CADRE_CHOICE_OVERLOAD_MASTER_V3_CLEAN.mp4
+
+      - name: Upload clean master artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HORS_CADRE_CHOICE_OVERLOAD_MASTER_V3_CLEAN
+          path: remotion-video/out/HORS_CADRE_CHOICE_OVERLOAD_MASTER_V3_CLEAN.mp4
+          if-no-files-found: error
+          retention-days: 7
