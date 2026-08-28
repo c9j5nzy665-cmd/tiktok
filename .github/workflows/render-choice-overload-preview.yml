@@ -1,0 +1,131 @@
+name: Render Choice Overload Preview
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "remotion-video/src/ChoiceOverload.tsx"
+      - "remotion-video/src/Root.tsx"
+      - ".github/workflows/render-choice-overload-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
+
+      - name: Install audio tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          pip install edge-tts
+
+      - name: Generate natural French narration
+        working-directory: remotion-video
+        run: |
+          mkdir -p public out
+          python - <<'PY'
+          import asyncio
+          import edge_tts
+
+          text = """Dans un supermarché californien, deux chercheurs installent une table de confitures.
+
+          Un jour : vingt-quatre parfums. Un autre : seulement six.
+
+          Avec vingt-quatre choix, environ soixante pour cent des passants s'arrêtent. Avec six, seulement quarante pour cent.
+
+          Plus de choix attire davantage.
+
+          Mais au moment d'acheter, tout s'inverse. Avec vingt-quatre confitures, à peine trois pour cent achètent. Avec six, près d'un tiers passe à la caisse.
+
+          Le grand choix avait attiré plus de monde, mais rendu la décision plus difficile.
+
+          Cette expérience a popularisé le choice overload. Dans certaines situations, trop d'options peut pousser à reporter, renoncer ou douter.
+
+          Et aujourd'hui, le mécanisme est partout : menus interminables, streaming, applications de rencontre, dizaines de produits presque identiques.
+
+          Le problème n'est pas d'avoir du choix. C'est d'en avoir assez pour ne plus savoir quoi laisser de côté.
+
+          Parfois, moins de choix ne te limite pas. Il t'aide à décider.
+
+          HORS CADRE. Pense autrement."""
+
+          async def main():
+              communicate = edge_tts.Communicate(text, "fr-FR-HenriNeural", rate="-2%", pitch="-2Hz")
+              await communicate.save("out/choice-overload-raw.mp3")
+
+          asyncio.run(main())
+          PY
+          RAW_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 out/choice-overload-raw.mp3)
+          FACTOR=$(python - <<PY
+          d=float("$RAW_DUR")
+          print(max(0.80, min(1.25, d/57.4)))
+          PY
+          )
+          echo "Raw narration duration: $RAW_DUR s | atempo=$FACTOR"
+          ffmpeg -y -i out/choice-overload-raw.mp3 -af "atempo=${FACTOR},loudnorm=I=-16:TP=-1.5:LRA=7" -t 58 -c:a libmp3lame -b:a 192k public/choice-overload-voice.mp3
+          ffprobe -v error -show_entries format=duration -of default=nw=1 public/choice-overload-voice.mp3
+
+      - name: Generate subtle sound design
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y \
+            -f lavfi -i "anoisesrc=color=brown:amplitude=0.012:duration=60:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=46:duration=60:sample_rate=48000" \
+            -filter_complex "[0:a]lowpass=f=700,volume=0.65[n];[1:a]volume=0.028[s];[n][s]amix=inputs=2:normalize=0,afade=t=in:st=0:d=1.4,afade=t=out:st=57:d=2[a]" \
+            -map "[a]" -c:a pcm_s16le public/choice-overload-bed.wav
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=64:duration=0.72:sample_rate=48000" \
+            -af "volume=0.46,afade=t=out:st=0.04:d=0.66" \
+            -c:a pcm_s16le public/choice-overload-hit.wav
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify composition
+        working-directory: remotion-video
+        run: npx remotion compositions
+
+      - name: Render preview
+        working-directory: remotion-video
+        run: |
+          npx remotion render ChoiceOverloadV1 out/CHOICE_OVERLOAD_PREVIEW_V1.mp4 \
+            --codec=h264 \
+            --scale=0.5 \
+            --crf=27 \
+            --concurrency=2 \
+            --overwrite
+
+      - name: Verify output
+        working-directory: remotion-video
+        run: |
+          test -s out/CHOICE_OVERLOAD_PREVIEW_V1.mp4
+          ffprobe -v error -show_entries stream=width,height,r_frame_rate -show_entries format=duration,size -of default=nw=1 out/CHOICE_OVERLOAD_PREVIEW_V1.mp4
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHOICE_OVERLOAD_PREVIEW_V1
+          path: remotion-video/out/CHOICE_OVERLOAD_PREVIEW_V1.mp4
+          if-no-files-found: error
+          retention-days: 7
