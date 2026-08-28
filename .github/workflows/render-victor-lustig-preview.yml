@@ -33,6 +33,11 @@ jobs:
         working-directory: remotion-video
         run: npm ci
 
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Generate subtle soundtrack
         working-directory: remotion-video
         run: |
