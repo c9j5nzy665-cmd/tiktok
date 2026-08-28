@@ -6,6 +6,7 @@ import {VictorLustigV3Composition} from "./VictorLustigV3";
 import {MilgramV1Composition} from "./MilgramV1";
 import {MilgramV2Composition} from "./MilgramV2";
 import {ChoiceOverloadComposition} from "./ChoiceOverload";
+import {ChoiceOverloadV2Composition} from "./ChoiceOverloadV2";
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -16,5 +17,6 @@ export const RemotionRoot: React.FC = () => (
     <MilgramV1Composition />
     <MilgramV2Composition />
     <ChoiceOverloadComposition />
+    <ChoiceOverloadV2Composition />
   </>
 );
