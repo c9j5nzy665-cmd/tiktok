@@ -69,18 +69,26 @@ const Background = () => {
 
 const Scene = ({scene}: {scene: (typeof scenes)[number]}) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 10, scene.duration - 10, scene.duration], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const imageDriven = IMAGE_KINDS.has(scene.kind);
+  const edge = imageDriven ? 3 : 7;
+  const opacity =
+    scene.kind === "hook"
+      ? interpolate(frame, [0, scene.duration - edge, scene.duration], [1, 1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        })
+      : interpolate(frame, [0, edge, scene.duration - edge, scene.duration], [0, 1, 1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
 
   if (scene.kind === "outro") {
-    const frameScale = interpolate(frame, [0, 22], [0, 1], {extrapolateRight: "clamp"});
-    const redScale = interpolate(frame, [8, 30], [0, 1], {
+    const frameScale = interpolate(frame, [0, 18], [0, 1], {extrapolateRight: "clamp"});
+    const redScale = interpolate(frame, [6, 24], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
-    const logoOpacity = interpolate(frame, [18, 45], [0, 1], {
+    const logoOpacity = interpolate(frame, [12, 32], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
@@ -104,8 +112,6 @@ const Scene = ({scene}: {scene: (typeof scenes)[number]}) => {
       </AbsoluteFill>
     );
   }
-
-  const imageDriven = IMAGE_KINDS.has(scene.kind);
 
   return (
     <AbsoluteFill
@@ -157,7 +163,7 @@ const Subtitle = () => {
     >
       <div
         style={{
-          background: "rgba(0,0,0,.76)",
+          background: "rgba(0,0,0,.78)",
           borderBottom: `3px solid ${RED}`,
           padding: "15px 23px",
           fontFamily: "Arial,Helvetica,sans-serif",
