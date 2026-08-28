@@ -1,4 +1,4 @@
 import "./index.css";
-import {ArgentCacheComposition} from "./Composition";
+import {PetRockComposition} from "./Composition";
 
-export const RemotionRoot: React.FC = () => <ArgentCacheComposition />;
+export const RemotionRoot: React.FC = () => <PetRockComposition />;
