@@ -63,7 +63,7 @@ const HookAccent = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const scale = interpolate(local, [0, 7, 18], [0.78, 1.08, 1], {
+  const scale = interpolate(local, [0, 7, 18], [0.86, 1.05, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -71,20 +71,20 @@ const HookAccent = () => {
     <div
       style={{
         position: "absolute",
-        left: 74,
-        top: 520,
+        left: 82,
+        top: 665,
         zIndex: 76,
         opacity: alpha,
         transform: `scale(${scale}) rotate(-1deg)`,
         transformOrigin: "left center",
-        border: `3px solid ${RED}`,
-        padding: "8px 16px 7px",
-        color: "white",
-        background: "rgba(0,0,0,.52)",
+        borderLeft: `4px solid ${RED}`,
+        padding: "7px 13px 6px",
+        color: "#ddd",
+        background: "rgba(0,0,0,.58)",
         fontFamily: "Arial,Helvetica,sans-serif",
-        fontSize: 20,
-        fontWeight: 950,
-        letterSpacing: 6,
+        fontSize: 16,
+        fontWeight: 900,
+        letterSpacing: 4,
       }}
     >
       IMPOSSIBLE. ET POURTANT VRAI.
@@ -250,8 +250,6 @@ export const VictorLustigV3Video = () => (
   <AbsoluteFill style={{background: "#050505"}}>
     <VictorLustigV2Video />
 
-    <Sequence from={66} durationInFrames={28}><Audio src={staticFile("victor-hit.wav")} volume={0.24} /></Sequence>
-    <Sequence from={710} durationInFrames={28}><Audio src={staticFile("victor-hit.wav")} volume={0.18} /></Sequence>
     <Sequence from={1045} durationInFrames={28}><Audio src={staticFile("victor-hit.wav")} volume={0.16} /></Sequence>
     <Sequence from={1238} durationInFrames={28}><Audio src={staticFile("victor-hit.wav")} volume={0.14} /></Sequence>
     <Sequence from={1360} durationInFrames={28}><Audio src={staticFile("victor-hit.wav")} volume={0.22} /></Sequence>
