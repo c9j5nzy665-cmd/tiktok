@@ -1,0 +1,5 @@
+Dans Codex, depuis la racine du dépôt :
+
+bash ./render.sh
+
+Le script utilise désormais des médias réels Wikimedia Commons / Unsplash et ne dépend plus de Pexels.
