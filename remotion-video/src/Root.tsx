@@ -12,6 +12,7 @@ import {PhoneBan2026Composition} from "./PhoneBan2026";
 import {PhoneBan2026V2Composition} from "./PhoneBan2026V2";
 import {PhoneBan2026V21Composition} from "./PhoneBan2026V21";
 import {Nike35Composition} from "./Nike35";
+import {Nike35V11Composition} from "./Nike35V11";
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -28,5 +29,6 @@ export const RemotionRoot: React.FC = () => (
     <PhoneBan2026V2Composition />
     <PhoneBan2026V21Composition />
     <Nike35Composition />
+    <Nike35V11Composition />
   </>
 );
