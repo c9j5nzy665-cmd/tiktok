@@ -1,0 +1,31 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Inter,50,&H00F7F7F5,&H000000FF,&H00101012,&HC018181C,-1,0,0,0,100,100,0,0,3,2,0,2,74,74,250,1
+Style: Accent,Inter,54,&H002F0DF2,&H000000FF,&H00101012,&HC018181C,-1,0,0,0,100,100,0,0,3,2,0,2,74,74,250,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:02.31,Default,,0,0,0,,Ce meuble IKEA vaut peut-être\Nplus à tes yeux
+Dialogue: 0,0:00:02.91,0:00:04.99,Default,,0,0,0,,simplement parce que tu l’as\Nmonté toi-même.
+Dialogue: 0,0:00:05.61,0:00:06.31,Default,,0,0,0,,Ça porte un nom.
+Dialogue: 0,0:00:06.93,0:00:07.97,Accent,,0,0,0,,L’EFFET IKEA.
+Dialogue: 0,0:00:08.73,0:00:12.22,Default,,0,0,0,,Des chercheurs ont demandé à des participants\Nd’assembler des boîtes IKEA,
+Dialogue: 0,0:00:12.69,0:00:14.15,Default,,0,0,0,,des Lego et des origamis.
+Dialogue: 0,0:00:14.91,0:00:15.43,Accent,,0,0,0,,RÉSULTAT.
+Dialogue: 0,0:00:15.93,0:00:17.00,Default,,0,0,0,,Lorsqu’ils réussissaient\Nà construire l’objet,
+Dialogue: 0,0:00:17.23,0:00:18.31,Default,,0,0,0,,ils lui accordaient\Ndavantage de valeur.
+Dialogue: 0,0:00:18.78,0:00:21.20,Default,,0,0,0,,Ils pouvaient même surestimer\Nla qualité
+Dialogue: 0,0:00:21.87,0:00:24.39,Default,,0,0,0,,de leur propre création.
+Dialogue: 0,0:00:25.15,0:00:26.43,Default,,0,0,0,,Mais lorsque le montage échouait,
+Dialogue: 0,0:00:26.76,0:00:27.73,Accent,,0,0,0,,l’effet disparaissait.
+Dialogue: 0,0:00:28.29,0:00:28.83,Accent,,0,0,0,,EN CLAIR.
+Dialogue: 0,0:00:29.16,0:00:31.05,Default,,0,0,0,,Plus tu investis d’effort\Ndans quelque chose,
+Dialogue: 0,0:00:31.65,0:00:33.18,Default,,0,0,0,,plus tu risques de t’y attacher.
+Dialogue: 0,0:00:33.77,0:00:35.20,Default,,0,0,0,,Même quand ce n’est\Nqu’une étagère.
