@@ -8,6 +8,7 @@ import {MilgramV2Composition} from "./MilgramV2";
 import {ChoiceOverloadComposition} from "./ChoiceOverload";
 import {ChoiceOverloadV2Composition} from "./ChoiceOverloadV2";
 import {ChoiceOverloadV3Composition} from "./ChoiceOverloadV3";
+import {IkeaEffectV5Composition} from "./IkeaEffectV5";
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -20,5 +21,6 @@ export const RemotionRoot: React.FC = () => (
     <ChoiceOverloadComposition />
     <ChoiceOverloadV2Composition />
     <ChoiceOverloadV3Composition />
+    <IkeaEffectV5Composition />
   </>
 );
