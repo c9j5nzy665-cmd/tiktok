@@ -1,4 +1,4 @@
-name: Render IKEA V4 Premium
+name: Render IKEA V5 HORS CADRE
 
 on:
   workflow_dispatch:
@@ -6,36 +6,95 @@ on:
     branches:
       - hors-cadre-ikea-v3
     paths:
-      - 'HORS_CADRE_IKEA_V4/**'
+      - 'remotion-video/src/IkeaEffectV5.tsx'
+      - 'remotion-video/src/Root.tsx'
       - '.github/workflows/render-ikea-v3.yml'
+
+permissions:
+  contents: read
 
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Install dependencies
+        working-directory: remotion-video
+        run: npm ci
 
       - name: Install FFmpeg and fonts
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-inter
 
-      - name: Render V4 Premium
+      - name: Prepare real visual assets and narration
         run: |
-          chmod +x HORS_CADRE_IKEA_V4/render.sh
-          bash HORS_CADRE_IKEA_V4/render.sh
+          mkdir -p remotion-video/public
+          cat HORS_CADRE_IKEA_V3/assets/voice8_parts/part*.b64 | tr -d '\n\r ' | base64 -d > remotion-video/public/ikea-voice.ogg
+          test -s remotion-video/public/ikea-voice.ogg
+
+          curl -L --fail --retry 3 -o remotion-video/public/ikea-assembly.jpg \
+            'https://images.pexels.com/photos/31755426/pexels-photo-31755426.jpeg?cs=srgb&dl=pexels-soc-nang-d-ng-2150345854-31755426.jpg&fm=jpg'
+          curl -L --fail --retry 3 -o remotion-video/public/ikea-instructions.jpg \
+            'https://images.pexels.com/photos/5805491/pexels-photo-5805491.jpeg?cs=srgb&dl=pexels-athena-5805491.jpg&fm=jpg'
+          curl -L --fail --retry 3 -o remotion-video/public/ikea-blocks.jpg \
+            'https://images.pexels.com/photos/7301355/pexels-photo-7301355.jpeg?cs=srgb&dl=pexels-kseniachernaya-7301355.jpg&fm=jpg'
+          curl -L --fail --retry 3 -o remotion-video/public/ikea-origami.jpg \
+            'https://images.pexels.com/photos/5185147/pexels-photo-5185147.jpeg?cs=srgb&dl=pexels-cottonbro-5185147.jpg&fm=jpg'
+          curl -L --fail --retry 3 -o remotion-video/public/ikea-shelf.jpg \
+            'https://images.pexels.com/photos/8927360/pexels-photo-8927360.jpeg?cs=srgb&dl=pexels-dan-hadley-360599-8927360.jpg&fm=jpg'
+
+      - name: Generate HORS CADRE sound bed
+        working-directory: remotion-video
+        run: |
+          ffmpeg -y \
+            -f lavfi -i "anoisesrc=color=brown:amplitude=0.012:duration=35.6:sample_rate=48000" \
+            -f lavfi -i "sine=frequency=46:duration=35.6:sample_rate=48000" \
+            -filter_complex "[0:a]lowpass=f=650,volume=0.62[n];[1:a]volume=0.028[s];[n][s]amix=inputs=2:normalize=0,afade=t=in:st=0:d=1.2,afade=t=out:st=33.5:d=1.8[a]" \
+            -map "[a]" -c:a pcm_s16le public/ikea-bed.wav
+          ffmpeg -y \
+            -f lavfi -i "sine=frequency=62:duration=0.72:sample_rate=48000" \
+            -af "volume=0.46,afade=t=out:st=0.04:d=0.66" \
+            -c:a pcm_s16le public/ikea-hit.wav
+
+      - name: Ensure Remotion browser
+        working-directory: remotion-video
+        run: npx remotion browser ensure
+
+      - name: Verify composition
+        working-directory: remotion-video
+        run: npx remotion compositions | grep IkeaEffectV5
+
+      - name: Render IKEA V5
+        working-directory: remotion-video
+        run: |
+          mkdir -p out
+          npx remotion render IkeaEffectV5 out/HORS_CADRE_EFFET_IKEA_MASTER_V5_DA_CLASSIC.mp4 \
+            --codec=h264 \
+            --crf=18 \
+            --concurrency=2 \
+            --overwrite
 
       - name: Verify output
+        working-directory: remotion-video
         run: |
-          test -s HORS_CADRE_IKEA_V4/HORS_CADRE_EFFET_IKEA_MASTER_V4_PREMIUM.mp4
-          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate -of default=noprint_wrappers=1 HORS_CADRE_IKEA_V4/HORS_CADRE_EFFET_IKEA_MASTER_V4_PREMIUM.mp4
+          test -s out/HORS_CADRE_EFFET_IKEA_MASTER_V5_DA_CLASSIC.mp4
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,width,height,r_frame_rate -of default=noprint_wrappers=1 out/HORS_CADRE_EFFET_IKEA_MASTER_V5_DA_CLASSIC.mp4
 
       - name: Upload final MP4
         uses: actions/upload-artifact@v4
         with:
-          name: HORS_CADRE_EFFET_IKEA_MASTER_V4_PREMIUM
-          path: HORS_CADRE_IKEA_V4/HORS_CADRE_EFFET_IKEA_MASTER_V4_PREMIUM.mp4
+          name: HORS_CADRE_EFFET_IKEA_MASTER_V5_DA_CLASSIC
+          path: remotion-video/out/HORS_CADRE_EFFET_IKEA_MASTER_V5_DA_CLASSIC.mp4
           if-no-files-found: error
           retention-days: 7
