@@ -10,6 +10,7 @@ import {ChoiceOverloadV2Composition} from "./ChoiceOverloadV2";
 import {ChoiceOverloadV3Composition} from "./ChoiceOverloadV3";
 import {PhoneBan2026Composition} from "./PhoneBan2026";
 import {PhoneBan2026V2Composition} from "./PhoneBan2026V2";
+import {PhoneBan2026V21Composition} from "./PhoneBan2026V21";
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -24,5 +25,6 @@ export const RemotionRoot: React.FC = () => (
     <ChoiceOverloadV3Composition />
     <PhoneBan2026Composition />
     <PhoneBan2026V2Composition />
+    <PhoneBan2026V21Composition />
   </>
 );
